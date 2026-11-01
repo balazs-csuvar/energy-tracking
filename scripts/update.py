@@ -45,21 +45,36 @@ def parse(ts):
 
 def main():
     acct = get(f"{API}/accounts/{ACCOUNT}/")
-    points = [mp for prop in acct["properties"] for mp in prop["electricity_meter_points"]
-              if not mp.get("is_export")]
-    if not points:
+    now = datetime.now(timezone.utc)
+
+    def active(a):
+        return parse(a["valid_from"]) <= now and (not a["valid_to"] or parse(a["valid_to"]) > now)
+
+    # Accounts keep old properties after a move. Prefer the property you haven't moved out of,
+    # then the import meter point with an agreement running today, then the most recently moved-into.
+    candidates = []
+    for prop in acct["properties"]:
+        print(f"Property moved_in={prop.get('moved_in_at')} moved_out={prop.get('moved_out_at')}")
+        for mp in prop["electricity_meter_points"]:
+            ags = mp.get("agreements", [])
+            print(f"  meter point ...{mp['mpan'][-4:]} export={mp.get('is_export')} "
+                  + ", ".join(f"{a['tariff_code']} {a['valid_from'][:10]}→{(a['valid_to'] or 'open')[:10]}" for a in ags))
+            if mp.get("is_export"):
+                continue
+            score = (prop.get("moved_out_at") is None, any(active(a) for a in ags), prop.get("moved_in_at") or "")
+            candidates.append((score, mp))
+    if not candidates:
         sys.exit("No electricity import meter point found on this account.")
-    mp = points[0]
+    mp = max(candidates, key=lambda c: c[0])[1]
     mpan = mp["mpan"]
     agreements = sorted(mp["agreements"], key=lambda a: a["valid_from"])
-    now = datetime.now(timezone.utc)
+    print(f"Using meter point ...{mpan[-4:]}")
 
     start_env = os.environ.get("START_DATE")
     if start_env:
         start = datetime.fromisoformat(start_env).replace(tzinfo=LONDON).astimezone(timezone.utc)
     else:
-        current = [a for a in agreements if parse(a["valid_from"]) <= now
-                   and (not a["valid_to"] or parse(a["valid_to"]) > now)]
+        current = [a for a in agreements if active(a)]
         start = parse((current or agreements)[-1]["valid_from"])
 
     # Pick the meter serial that actually returns data (smart meter swaps leave stale serials).
@@ -112,14 +127,15 @@ def main():
         d["slots"] += 1
 
     # Drop a trailing partial day (data usually lands a day late).
-    out_days = [d for d in days.values() if d["slots"] >= 46]
+    out_days = sorted((d for d in days.values() if d["slots"] >= 46), key=lambda d: d["date"])
     for d in out_days:
         d["kwh"] = round(d["kwh"], 3)
         d["cost_p"] = round(d["cost_p"], 2)
 
     with open(OUT, "w") as f:
         json.dump({"updated": now.isoformat(timespec="minutes"), "flat_rate": FLAT_RATE,
-                   "tariff": agreements[-1]["tariff_code"], "days": out_days}, f, indent=1)
+                   "tariff": (([a for a in agreements if active(a)] or agreements)[-1])["tariff_code"], "days": out_days}, f, indent=1)
+    print(f"Tracking from {start.date()}, {len(readings)} half-hours read.")
     print(f"Wrote {len(out_days)} days ({missing} half-hours without a rate skipped).")
 
 
