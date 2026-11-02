@@ -2,7 +2,8 @@ name: Update tariff tracker
 
 on:
   schedule:
-    - cron: "17 10 * * *"   # daily, after Octopus has published yesterday's readings
+    - cron: "17 10 * * *"   # morning
+    - cron: "17 18 * * *"   # evening, catches readings Octopus publishes late
   workflow_dispatch:
 
 permissions:
