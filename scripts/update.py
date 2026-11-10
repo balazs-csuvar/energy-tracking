@@ -43,6 +43,35 @@ def parse(ts):
     return datetime.fromisoformat(ts.replace("Z", "+00:00")) if ts else None
 
 
+def daily_temps(postcode, start, now):
+    """Daily mean outside temperature (°C) near the property, keyed by local date.
+    Location comes from the account postcode and is never written out. Failures return {}."""
+    if not postcode:
+        print("No postcode on the account; skipping temperatures.")
+        return {}
+    try:
+        pc = get(f"https://api.postcodes.io/postcodes/{urllib.parse.quote(postcode)}", auth=False)["result"]
+        lat, lon = round(pc["latitude"], 2), round(pc["longitude"], 2)
+        out = {}
+        first, last = start.astimezone(LONDON).date(), now.astimezone(LONDON).date()
+        archive_end = last - timedelta(days=6)
+        common = {"latitude": lat, "longitude": lon, "daily": "temperature_2m_mean", "timezone": "Europe/London"}
+        if archive_end >= first:
+            a = get("https://archive-api.open-meteo.com/v1/archive",
+                    {**common, "start_date": first.isoformat(), "end_date": archive_end.isoformat()}, auth=False)
+            out.update(zip(a["daily"]["time"], a["daily"]["temperature_2m_mean"]))
+        f = get("https://api.open-meteo.com/v1/forecast", {**common, "past_days": 14, "forecast_days": 1}, auth=False)
+        for day, t in zip(f["daily"]["time"], f["daily"]["temperature_2m_mean"]):
+            if out.get(day) is None:
+                out[day] = t
+        out = {k: round(v, 1) for k, v in out.items() if v is not None}
+        print(f"Temperatures for {len(out)} days.")
+        return out
+    except Exception as e:
+        print(f"Temperature lookup failed: {e}")
+        return {}
+
+
 def main():
     acct = get(f"{API}/accounts/{ACCOUNT}/")
     now = datetime.now(timezone.utc)
@@ -62,10 +91,10 @@ def main():
             if mp.get("is_export"):
                 continue
             score = (prop.get("moved_out_at") is None, any(active(a) for a in ags), prop.get("moved_in_at") or "")
-            candidates.append((score, mp))
+            candidates.append((score, mp, prop.get("postcode")))
     if not candidates:
         sys.exit("No electricity import meter point found on this account.")
-    mp = max(candidates, key=lambda c: c[0])[1]
+    _, mp, postcode = max(candidates, key=lambda c: c[0])
     mpan = mp["mpan"]
     agreements = sorted(mp["agreements"], key=lambda a: a["valid_from"])
     print(f"Using meter point ...{mpan[-4:]}")
@@ -140,10 +169,14 @@ def main():
             missing += 1
             continue
         day = ts.astimezone(LONDON).date().isoformat()
-        d = days.setdefault(day, {"date": day, "kwh": 0.0, "cost_p": 0.0, "slots": 0})
+        d = days.setdefault(day, {"date": day, "kwh": 0.0, "cost_p": 0.0, "slots": 0, "hh": [0.0] * 48})
+        local = ts.astimezone(LONDON)
+        d["hh"][local.hour * 2 + local.minute // 30] += r["consumption"]
         d["kwh"] += r["consumption"]
         d["cost_p"] += r["consumption"] * p
         d["slots"] += 1
+
+    temps = daily_temps(postcode, start, now)
 
     # Drop a trailing partial day (data usually lands a day late).
     out_days = sorted((d for d in days.values() if d["slots"] >= 46), key=lambda d: d["date"])
@@ -153,10 +186,22 @@ def main():
         sc = standing_on(d["date"])
         if sc is not None:
             d["standing_p"] = round(sc, 2)
+        d["hh"] = [round(x, 3) for x in d["hh"]]
+        t = temps.get(d["date"])
+        if t is not None:
+            d["temp_c"] = t
+
+    # Unit rate for each half hour of the latest day, to colour the daily profile by price band.
+    slot_rates = []
+    if out_days:
+        base = datetime.fromisoformat(out_days[-1]["date"]).replace(tzinfo=LONDON)
+        for i in range(48):
+            r = rate_at((base + timedelta(minutes=30 * i)).astimezone(timezone.utc))
+            slot_rates.append(round(r, 2) if r is not None else None)
 
     with open(OUT, "w") as f:
         json.dump({"updated": now.isoformat(timespec="minutes"), "flat_rate": FLAT_RATE,
-                   "tariff": (([a for a in agreements if active(a)] or agreements)[-1])["tariff_code"], "days": out_days}, f, indent=1)
+                   "tariff": (([a for a in agreements if active(a)] or agreements)[-1])["tariff_code"], "slot_rates": slot_rates, "days": out_days}, f, indent=1)
     print(f"Tracking from {start.date()}, {len(readings)} half-hours read.")
     print(f"Wrote {len(out_days)} days ({missing} half-hours without a rate skipped).")
 
