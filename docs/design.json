@@ -11,5 +11,9 @@
  "hp_kwh_high": 9732,
  "flow_temp_design_c": 55,
  "flow_temp_actual_c": 48,
- "compare_from": "2026-10-01"
+ "compare_from": "2026-10-01",
+ "gas_p_per_kwh": 7.97,
+ "gas_standing_p_day": 29.68,
+ "boiler_efficiency": 0.88,
+ "_gas_note": "Ofgem price cap, direct debit, GB average, 1 Oct-31 Dec 2026. Update when the cap changes."
 }

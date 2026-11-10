@@ -38,6 +38,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}
 th{font-weight:500;color:var(--sub);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
 td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}
+details.more{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:24px 0 16px}
+details.more summary{cursor:pointer;font-size:15px;font-weight:500}
+details.more p{font-size:14px;color:var(--sub)}
 .find{margin:0 0 16px;padding:0;list-style:none}
 .find li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px;color:var(--sub)}
 .find b{font-weight:500;color:var(--ink)}
@@ -152,6 +155,13 @@ th:first-child,td:first-child{text-align:left}
   <div class="chart"><canvas id="dtemp" role="img" aria-label="Daily kWh against outside temperature with the design line and your trend line"></canvas></div>
 </div>
 <p class="note" id="dnote"></p>
+
+<details class="more" id="gasbox">
+  <summary>Compared with a gas boiler</summary>
+  <p id="gintro"></p>
+  <table><thead><tr><th></th><th>Heat pump</th><th>Gas boiler</th></tr></thead><tbody id="gtab"></tbody></table>
+  <p class="note" id="gnote"></p>
+</details>
 
 <p class="note">Savings compare unit rates only; standing charges are counted in the usage and cost section. All costs include VAT. Usage arrives from Octopus a day or two late; the page refreshes twice a day.</p>
 </main>
@@ -341,6 +351,30 @@ function linfit(pts) {
   return { a: my - b * mx, b };
 }
 
+function renderGas({ D, since, household, projHP, spf, fd }) {
+  if (!D.gas_p_per_kwh || !since.length) return;
+  const n = since.length, eff = D.boiler_efficiency || 0.88;
+  const rate = data.days.reduce((a, d) => a + d.cost_p, 0) / data.days.reduce((a, d) => a + d.kwh, 0);
+  const hpE = Math.max(0, since.reduce((a, d) => a + d.kwh, 0) - household * n);
+  const row = (label, spfUse, hpKwh, days) => {
+    const heat = hpKwh * spfUse, gas = heat / eff;
+    const hpCost = hpKwh * rate, gasCost = gas * D.gas_p_per_kwh + D.gas_standing_p_day * days;
+    return { label, heat, hpKwh, gas, hpCost, gasCost };
+  };
+  const s1 = row('Since ' + fd(D.compare_from) + ` (${n} days)`, spf || D.spf, hpE, n);
+  const yr = projHP ? row('Typical year', spf || D.spf, projHP, 365) : null;
+  const yrDesign = row('Typical year at design efficiency', D.spf, (D.space_heat_kwh + D.hot_water_kwh) / D.spf, 365);
+  const rows = [s1, yr, yrDesign].filter(Boolean);
+  const diff = (yr || s1).gasCost - (yr || s1).hpCost;
+  const breakeven = rate / (D.gas_p_per_kwh / eff);
+  const g0 = p => (p < 0 ? '-' : '') + '£' + Math.round(Math.abs(p) / 100).toLocaleString('en-GB');
+  $('gtab').innerHTML = rows.map(r => `<tr><td>${r.label}</td><td>${g0(r.hpCost)}<br><span class="note">${Math.round(r.hpKwh).toLocaleString('en-GB')}&nbsp;kWh</span></td><td>${g0(r.gasCost)}<br><span class="note">${Math.round(r.gas).toLocaleString('en-GB')}&nbsp;kWh</span></td></tr>`).join('');
+  $('gintro').innerHTML = `${diff >= 0 ? 'The heat pump is about <b>' + g0(diff) + ' cheaper</b>' : 'A boiler would be about <b>' + g0(-diff) + ' cheaper</b>'} over a typical year, assuming the same heat delivered. ` +
+    `Break-even efficiency at your ${rate.toFixed(1)}p average rate is ${breakeven.toFixed(1)}; your implied figure is ${(spf || D.spf).toFixed(1)}.`;
+  $('gnote').textContent = `Heat pump electricity = your usage minus the non-heating baseline (${household.toFixed(1)} kWh a day), priced at your average Cosy rate. ` +
+    `Boiler: ${(eff * 100).toFixed(0)}% efficient, gas at ${D.gas_p_per_kwh}p/kWh plus ${D.gas_standing_p_day}p a day standing charge (Ofgem cap, Oct–Dec 2026). Change these in docs/design.json.`;
+}
+
 function renderDesign() {
   if (!design || !hist?.days?.length) return;
   const D = design, H = hist.days.filter(d => d.temp_c != null), typ = Object.values(hist.typical_temps || {});
@@ -379,6 +413,8 @@ function renderDesign() {
     ? `<b>Using ${Math.abs(pct).toFixed(0)}% less than the design predicts</b> for the weather since ${fd(D.compare_from)}. On a typical year that points to about ${Math.round(projHP / 100) * 100} kWh for the heat pump, ${projHP < D.hp_kwh_low ? 'below' : 'within'} the design range.`
     : `<b>Using ${pct.toFixed(0)}% more than the design predicts</b> for the weather since ${fd(D.compare_from)}. On a typical year that points to about ${Math.round(projHP / 100) * 100} kWh for the heat pump (design ${D.hp_kwh_low.toLocaleString()}–${D.hp_kwh_high.toLocaleString()}).`;
   $('dnote').textContent = `How this works: the design heat loss (${Math.round(hlc)} W/°C, assuming ${D.design_outdoor_c}°C outside at design) is spread over a typical year of local temperatures so it adds up to the design's ${D.space_heat_kwh.toLocaleString()} kWh, then divided by the design efficiency. Non-heating use (${base.toFixed(1)} kWh a day, including hot water) comes from your own warm days and is added to both lines. Edit docs/design.json to change any figure.`;
+
+  renderGas({ D, since, household, projHP, spf, fd });
 
   const pos = css('--pos'), muted = css('--muted'), line = css('--line'), ink = css('--ink');
   $('lg-da').style.background = pos; $('lg-dp').style.background = pos;
