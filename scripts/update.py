@@ -89,6 +89,7 @@ def main():
 
     # Unit rates for every agreement overlapping the window.
     rates = []  # (from, to, p/kWh inc VAT)
+    standing = []  # (from, to, p/day inc VAT)
     for a in agreements:
         a_from, a_to = parse(a["valid_from"]), parse(a["valid_to"]) or now + timedelta(days=1)
         if a_to <= start:
@@ -103,7 +104,25 @@ def main():
                 continue
             f, t = parse(r["valid_from"]), parse(r["valid_to"]) or a_to
             rates.append((max(f, a_from), min(t, a_to), r["value_inc_vat"]))
+        try:
+            sc = get_all(f"{API}/products/{product}/electricity-tariffs/{code}/standing-charges/",
+                         {"period_from": max(a_from, start).isoformat(), "period_to": a_to.isoformat()}, auth=False)
+        except Exception as e:  # standing charge is a nice-to-have; never fail the run over it
+            print(f"Standing charge lookup failed for {code}: {e}")
+            sc = []
+        for r in sc:
+            if r.get("payment_method") not in (None, "DIRECT_DEBIT"):
+                continue
+            f, t = parse(r["valid_from"]), parse(r["valid_to"]) or a_to
+            standing.append((max(f, a_from), min(t, a_to), r["value_inc_vat"]))
     rates.sort()
+
+    def standing_on(day):
+        noon = datetime.fromisoformat(day + "T12:00").replace(tzinfo=LONDON).astimezone(timezone.utc)
+        for f, t, v in standing:
+            if f <= noon < t:
+                return v
+        return None
     starts = [r[0] for r in rates]
 
     def rate_at(ts):
@@ -131,6 +150,9 @@ def main():
     for d in out_days:
         d["kwh"] = round(d["kwh"], 3)
         d["cost_p"] = round(d["cost_p"], 2)
+        sc = standing_on(d["date"])
+        if sc is not None:
+            d["standing_p"] = round(sc, 2)
 
     with open(OUT, "w") as f:
         json.dump({"updated": now.isoformat(timespec="minutes"), "flat_rate": FLAT_RATE,

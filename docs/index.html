@@ -26,6 +26,18 @@ h1{font-size:22px;font-weight:500;margin:0}
 .ctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--sub)}
 .ctl input{width:90px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
 .note{font-size:13px;color:var(--muted)}
+h2.sec{font-size:18px;font-weight:500;margin:32px 0 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.seg button{font:inherit;font-size:14px;background:none;color:var(--sub);border:0;padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.tile .s{font-size:12px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--sub);margin:-4px 0 8px}
+.legend span{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--sub);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
 </style>
 </head>
 <body>
@@ -57,7 +69,35 @@ h1{font-size:22px;font-weight:500;margin:0}
   <div class="chart"><canvas id="daily" role="img" aria-label="Daily saving of Cosy versus the flat rate; bars above zero mean Cosy was cheaper"></canvas></div>
 </div>
 
-<p class="note">Unit costs only, standing charges excluded. Usage arrives from Octopus about a day late; the page refreshes once a day.</p>
+<h2 class="sec">Usage and cost</h2>
+<div class="seg" role="group" aria-label="Period">
+  <button data-r="7">7 days</button><button data-r="30">30 days</button><button data-r="month">This month</button><button data-r="all">All</button>
+</div>
+
+<div class="grid">
+  <div class="tile"><p class="l">Used</p><p class="v" id="u-kwh">–</p><p class="s" id="u-kwhd"></p></div>
+  <div class="tile"><p class="l">Total cost</p><p class="v" id="u-cost">–</p><p class="s" id="u-costd"></p></div>
+  <div class="tile"><p class="l">Units</p><p class="v" id="u-units">–</p><p class="s" id="u-rate"></p></div>
+  <div class="tile"><p class="l">Standing charge</p><p class="v" id="u-sc">–</p><p class="s" id="u-scd"></p></div>
+</div>
+
+<div class="card">
+  <h2>Daily usage</h2>
+  <div class="chart"><canvas id="ukwh" role="img" aria-label="Electricity used per day in kWh"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Daily cost</h2>
+  <div class="legend"><span><i id="lg-u"></i>Units</span><span><i id="lg-s"></i>Standing charge</span></div>
+  <div class="chart"><canvas id="ucost" role="img" aria-label="Cost per day, split into unit cost and standing charge"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>By month</h2>
+  <table><thead><tr><th>Month</th><th>kWh</th><th>Cost</th><th>Per day</th></tr></thead><tbody id="months"></tbody></table>
+</div>
+
+<p class="note">Savings compare unit rates only; standing charges are counted in the usage and cost section. All costs include VAT. Usage arrives from Octopus a day or two late; the page refreshes twice a day.</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -65,7 +105,7 @@ h1{font-size:22px;font-weight:500;margin:0}
 const $ = id => document.getElementById(id);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const gbp = p => (p < 0 ? '-' : '') + '£' + (Math.abs(p) / 100).toFixed(2);
-let data, cumChart, dailyChart;
+let data, cumChart, dailyChart, kwhChart, costChart, range = 'month';
 
 function store(k, v) { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); } catch (e) { v = null; } return v; }
 
@@ -109,13 +149,58 @@ function render() {
       scales: { ...base.scales, y: { ...base.scales.y, ticks: { color: muted, callback: x => x + 'p' } } } } });
 }
 
+function renderUsage() {
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.r === range));
+  const all = data.days, last = all.at(-1).date;
+  let days = range === 'all' ? all : range === 'month' ? all.filter(d => d.date.slice(0, 7) === last.slice(0, 7)) : all.slice(-Number(range));
+  const n = days.length;
+  const sum = f => days.reduce((a, d) => a + f(d), 0);
+  const kwh = sum(d => d.kwh), units = sum(d => d.cost_p), sc = sum(d => d.standing_p || 0), hasSc = days.some(d => d.standing_p != null);
+  const total = units + sc;
+  $('u-kwh').textContent = Math.round(kwh).toLocaleString('en-GB') + ' kWh';
+  $('u-kwhd').textContent = (kwh / n).toFixed(1) + ' kWh a day · ' + n + (n === 1 ? ' day' : ' days');
+  $('u-cost').textContent = gbp(total);
+  $('u-costd').textContent = gbp(total / n) + ' a day' + (hasSc ? '' : ' (units only)');
+  $('u-units').textContent = gbp(units);
+  $('u-rate').textContent = 'avg ' + (units / kwh).toFixed(1) + 'p/kWh';
+  $('u-sc').textContent = hasSc ? gbp(sc) : '–';
+  $('u-scd').textContent = hasSc ? (sc / n).toFixed(1) + 'p a day' : 'arrives with the next update';
+
+  const months = {};
+  all.forEach(d => { const m = months[d.date.slice(0, 7)] ??= { kwh: 0, cost: 0, n: 0 }; m.kwh += d.kwh; m.cost += d.cost_p + (d.standing_p || 0); m.n++; });
+  $('months').innerHTML = Object.entries(months).reverse().map(([m, v]) =>
+    `<tr><td>${new Date(m + '-15').toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}${v.n < new Date(+m.slice(0, 4), +m.slice(5), 0).getDate() ? ` <span style="color:var(--muted)">(${v.n}d)</span>` : ''}</td><td>${Math.round(v.kwh)}</td><td>${gbp(v.cost)}</td><td>${gbp(v.cost / v.n)}</td></tr>`).join('');
+
+  const pos = css('--pos'), grey = css('--muted'), muted = css('--muted'), line = css('--line');
+  $('lg-u').style.background = pos; $('lg-s').style.background = grey;
+  if (!window.Chart) return;
+  const labels = days.map(d => new Date(d.date + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+  const opts = (fmt, tip) => ({ responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { callbacks: tip } },
+    scales: { x: { stacked: true, grid: { display: false }, ticks: { color: muted, maxRotation: 0, autoSkipPadding: 12 } },
+              y: { stacked: true, beginAtZero: true, grid: { color: line }, ticks: { color: muted, callback: fmt } } } });
+  kwhChart?.destroy(); costChart?.destroy();
+  kwhChart = new Chart($('ukwh'), { type: 'bar',
+    data: { labels, datasets: [{ data: days.map(d => +d.kwh.toFixed(1)), backgroundColor: pos, borderRadius: 4, maxBarThickness: 16 }] },
+    options: opts(x => x + ' kWh', { label: c => c.raw + ' kWh · avg ' + (days[c.dataIndex].cost_p / days[c.dataIndex].kwh).toFixed(1) + 'p/kWh' }) });
+  costChart = new Chart($('ucost'), { type: 'bar',
+    data: { labels, datasets: [
+      { label: 'Units', data: days.map(d => d.cost_p / 100), backgroundColor: pos, maxBarThickness: 16 },
+      { label: 'Standing charge', data: days.map(d => (d.standing_p || 0) / 100), backgroundColor: grey, borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 16 }] },
+    options: opts(x => '£' + x, { label: c => c.dataset.label + ' ' + gbp(c.raw * 100),
+      footer: items => 'Total ' + gbp(items.reduce((a, i) => a + i.raw, 0) * 100) }) });
+}
+
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { range = b.dataset.r; store('range', range); renderUsage(); }));
+
 fetch('data.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null).then(d => {
   if (!d || !d.days?.length) { $('meta').textContent = 'No data yet — run the "Update tariff tracker" workflow.'; return; }
   data = d;
   $('flat').value = store('flatRate') || d.flat_rate;
   const upd = new Date(d.updated).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   $('meta').textContent = `${d.tariff} · ${d.days[0].date} to ${d.days.at(-1).date} · updated ${upd}`;
-  render();
+  range = store('range') || range;
+  render(); renderUsage();
   $('flat').addEventListener('input', () => { store('flatRate', $('flat').value); render(); });
 });
 </script>
