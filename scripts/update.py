@@ -43,6 +43,33 @@ def parse(ts):
     return datetime.fromisoformat(ts.replace("Z", "+00:00")) if ts else None
 
 
+_coords = {}
+
+
+def coords(postcode):
+    if postcode not in _coords:
+        pc = get(f"https://api.postcodes.io/postcodes/{urllib.parse.quote(postcode)}", auth=False)["result"]
+        _coords[postcode] = (round(pc["latitude"], 2), round(pc["longitude"], 2))
+    return _coords[postcode]
+
+
+def typical_temps(postcode, years=(2021, 2025)):
+    """Average daily mean temperature for each calendar day (MM-DD) over recent years, for annual projections."""
+    try:
+        lat, lon = coords(postcode)
+        a = get("https://archive-api.open-meteo.com/v1/archive",
+                {"latitude": lat, "longitude": lon, "daily": "temperature_2m_mean", "timezone": "Europe/London",
+                 "start_date": f"{years[0]}-01-01", "end_date": f"{years[1]}-12-31"}, auth=False)
+        by = {}
+        for day, t in zip(a["daily"]["time"], a["daily"]["temperature_2m_mean"]):
+            if t is not None and day[5:] != "02-29":
+                by.setdefault(day[5:], []).append(t)
+        return {k: round(sum(v) / len(v), 2) for k, v in sorted(by.items())}
+    except Exception as e:
+        print(f"Typical-year temperature lookup failed: {e}")
+        return {}
+
+
 def daily_temps(postcode, start, now):
     """Daily mean outside temperature (°C) near the property, keyed by local date.
     Location comes from the account postcode and is never written out. Failures return {}."""
@@ -50,8 +77,7 @@ def daily_temps(postcode, start, now):
         print("No postcode on the account; skipping temperatures.")
         return {}
     try:
-        pc = get(f"https://api.postcodes.io/postcodes/{urllib.parse.quote(postcode)}", auth=False)["result"]
-        lat, lon = round(pc["latitude"], 2), round(pc["longitude"], 2)
+        lat, lon = coords(postcode)
         out = {}
         first, last = start.astimezone(LONDON).date(), now.astimezone(LONDON).date()
         archive_end = last - timedelta(days=6)
@@ -70,6 +96,34 @@ def daily_temps(postcode, start, now):
     except Exception as e:
         print(f"Temperature lookup failed: {e}")
         return {}
+
+
+def write_history(mp, agreements, postcode, now):
+    """Daily kWh and temperature since the first agreement at this property, plus a typical year of
+    temperatures. Used for the design comparison (summer baseline and annual projection)."""
+    try:
+        first = parse(agreements[0]["valid_from"])
+        readings = []
+        for m in mp["meters"]:
+            r = get_all(f"{API}/electricity-meter-points/{mp['mpan']}/meters/{m['serial_number']}/consumption/",
+                        {"period_from": first.isoformat(), "page_size": 25000, "order_by": "period"})
+            if len(r) > len(readings):
+                readings = r
+        days = {}
+        for r in readings:
+            day = parse(r["interval_start"]).astimezone(LONDON).date().isoformat()
+            d = days.setdefault(day, [0.0, 0])
+            d[0] += r["consumption"]
+            d[1] += 1
+        temps = daily_temps(postcode, first, now) if postcode else {}
+        out = [{"date": k, "kwh": round(v[0], 2), **({"temp_c": temps[k]} if k in temps else {})}
+               for k, v in sorted(days.items()) if v[1] >= 46]
+        with open(os.path.join(os.path.dirname(OUT), "history.json"), "w") as f:
+            json.dump({"updated": now.isoformat(timespec="minutes"), "days": out,
+                       "typical_temps": typical_temps(postcode) if postcode else {}}, f)
+        print(f"History: {len(out)} days from {out[0]['date'] if out else '-'}.")
+    except Exception as e:
+        print(f"History failed: {e}")
 
 
 def main():
@@ -202,6 +256,7 @@ def main():
     with open(OUT, "w") as f:
         json.dump({"updated": now.isoformat(timespec="minutes"), "flat_rate": FLAT_RATE,
                    "tariff": (([a for a in agreements if active(a)] or agreements)[-1])["tariff_code"], "slot_rates": slot_rates, "days": out_days}, f, indent=1)
+    write_history(mp, agreements, postcode, now)
     print(f"Tracking from {start.date()}, {len(readings)} half-hours read.")
     print(f"Wrote {len(out_days)} days ({missing} half-hours without a rate skipped).")
 
