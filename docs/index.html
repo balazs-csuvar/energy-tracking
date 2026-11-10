@@ -38,6 +38,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}
 th{font-weight:500;color:var(--sub);text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
 td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left}
+.find{margin:0 0 16px;padding:0;list-style:none}
+.find li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14px;color:var(--sub)}
+.find b{font-weight:500;color:var(--ink)}
+.hm{display:grid;grid-template-columns:34px repeat(24,minmax(0,1fr));gap:2px;font-size:11px;color:var(--muted)}
+.hm div{height:22px;border-radius:3px;display:flex;align-items:center}
+.hm .c{cursor:default}
+.hmscale{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:8px}
+.hmscale span.bar{flex:0 0 120px;height:8px;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--pos) 4%,var(--card)),var(--pos))}
 </style>
 </head>
 <body>
@@ -97,6 +105,33 @@ th:first-child,td:first-child{text-align:left}
   <table><thead><tr><th>Month</th><th>kWh</th><th>Cost</th><th>Per day</th></tr></thead><tbody id="months"></tbody></table>
 </div>
 
+<h2 class="sec">When you use it</h2>
+<p class="sub" style="margin-top:-6px">Uses the same period as above.</p>
+<ul class="find" id="findings"></ul>
+
+<div class="card">
+  <h2>Average day</h2>
+  <div class="legend"><span><i style="background:#1baf7a"></i>Cheap</span><span><i id="lg-std"></i>Standard</span><span><i style="background:#eb6834"></i>Peak 4–7pm</span></div>
+  <div class="chart"><canvas id="aprof" role="img" aria-label="Average kWh used in each hour of the day, coloured by price band"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Hour by weekday</h2>
+  <div class="hm" id="heat"></div>
+  <div class="hmscale"><span>less</span><span class="bar"></span><span>more kWh</span></div>
+</div>
+
+<div class="card">
+  <h2>Day of the week</h2>
+  <div class="legend"><span><i id="lg-wd"></i>Average use</span><span><i style="background:var(--ink);border-radius:50%"></i>Expected for the weather</span></div>
+  <div class="chart"><canvas id="awd" role="img" aria-label="Average daily kWh by day of week, with the amount expected given outside temperature"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Usage vs outside temperature</h2>
+  <div class="chart"><canvas id="atemp" role="img" aria-label="Scatter of daily kWh against daily mean outside temperature, with a trend line"></canvas></div>
+</div>
+
 <p class="note">Savings compare unit rates only; standing charges are counted in the usage and cost section. All costs include VAT. Usage arrives from Octopus a day or two late; the page refreshes twice a day.</p>
 </main>
 
@@ -105,7 +140,7 @@ th:first-child,td:first-child{text-align:left}
 const $ = id => document.getElementById(id);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const gbp = p => (p < 0 ? '-' : '') + '£' + (Math.abs(p) / 100).toFixed(2);
-let data, cumChart, dailyChart, kwhChart, costChart, range = 'month';
+let data, cumChart, dailyChart, kwhChart, costChart, profChart, wdChart, tempChart, range = 'month';
 
 function store(k, v) { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); } catch (e) { v = null; } return v; }
 
@@ -173,6 +208,7 @@ function renderUsage() {
 
   const pos = css('--pos'), grey = css('--muted'), muted = css('--muted'), line = css('--line');
   $('lg-u').style.background = pos; $('lg-s').style.background = grey;
+  renderAnalysis(days);
   if (!window.Chart) return;
   const labels = days.map(d => new Date(d.date + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
   const opts = (fmt, tip) => ({ responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -189,6 +225,93 @@ function renderUsage() {
       { label: 'Standing charge', data: days.map(d => (d.standing_p || 0) / 100), backgroundColor: grey, borderRadius: { topLeft: 4, topRight: 4 }, maxBarThickness: 16 }] },
     options: opts(x => '£' + x, { label: c => c.dataset.label + ' ' + gbp(c.raw * 100),
       footer: items => 'Total ' + gbp(items.reduce((a, i) => a + i.raw, 0) * 100) }) });
+}
+
+const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const wdOf = d => (new Date(d.date + 'T12:00').getDay() + 6) % 7;
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const band = r => r == null ? 'standard' : r < 20 ? 'cheap' : r > 40 ? 'peak' : 'standard';
+
+function fit(days) {
+  const pts = days.filter(d => d.temp_c != null);
+  if (pts.length < 5) return null;
+  const xs = pts.map(d => d.temp_c), ys = pts.map(d => d.kwh), mx = avg(xs), my = avg(ys);
+  const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
+  if (Math.max(...xs) - Math.min(...xs) < 3 || !sxx) return null;
+  const b = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / sxx, a = my - b * mx;
+  const r = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / Math.sqrt(sxx * ys.reduce((s, y) => s + (y - my) ** 2, 0));
+  return { a, b, r, pts, at: t => a + b * t, lo: Math.min(...xs), hi: Math.max(...xs) };
+}
+
+function renderAnalysis(days) {
+  const hh = days.filter(d => d.hh);
+  const f = $('findings');
+  if (!hh.length) { f.innerHTML = '<li>Half-hourly data arrives with the next update.</li>'; return; }
+  const rates = data.slot_rates || [];
+  const hour = Array.from({ length: 24 }, (_, h) => avg(hh.map(d => d.hh[2 * h] + d.hh[2 * h + 1])));
+  const hourBand = h => band(rates[2 * h]);
+  const tot = hh.reduce((a, d) => a + d.kwh, 0);
+  const share = b => hh.reduce((a, d) => a + d.hh.reduce((s, v, i) => s + (band(rates[i]) === b ? v : 0), 0), 0) / tot * 100;
+  const timeShare = b => rates.filter(r => band(r) === b).length / 48 * 100;
+  const cheap = share('cheap'), peak = share('peak');
+  const top = hour.map((v, h) => [h, v]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]).sort((a, b) => a - b);
+  const fm = h => String(h).padStart(2, '0') + ':00';
+  const standbyW = avg(hh.map(d => Math.min(...d.hh))) * 2000;
+  const m = fit(hh);
+
+  const items = [];
+  items.push(`<b>Busiest hours: ${top.map(fm).join(', ')}.</b> The average day uses ${(tot / hh.length).toFixed(1)} kWh, and the quietest hours are ${hour.map((v, h) => [h, v]).sort((a, b) => a[1] - b[1]).slice(0, 2).map(x => fm(x[0])).sort().join(' and ')}.`);
+  if (rates.length) items.push(`<b>${cheap.toFixed(0)}% of your electricity is used in cheap hours</b>, which make up ${timeShare('cheap').toFixed(0)}% of the day, and ${peak.toFixed(0)}% in the 4–7pm peak (${timeShare('peak').toFixed(0)}% of the day). ` +
+    (cheap < timeShare('cheap') + 10 ? 'Usage is spread almost evenly, so the heat pump isn’t really shifting load into cheap windows yet.' : 'You are shifting a good share of load into cheap windows.'));
+  if (m) {
+    const base = m.at(15.5);
+    items.push(`<b>Every 1°C colder adds about ${(-m.b).toFixed(1)} kWh a day</b> (about ${gbp(-m.b * hh.reduce((a, d) => a + d.cost_p, 0) / tot)} a day). Temperature explains ${(m.r ** 2 * 100).toFixed(0)}% of the day-to-day variation. At 15.5°C, when little heating is needed, the trend gives about ${base.toFixed(0)} kWh a day.`);
+    const res = WD.map((_, i) => avg(hh.filter(d => wdOf(d) === i && d.temp_c != null).map(d => d.kwh - m.at(d.temp_c))));
+    const raw = WD.map((_, i) => avg(hh.filter(d => wdOf(d) === i).map(d => d.kwh)));
+    const we = avg([raw[5], raw[6]]), wk = avg(raw.slice(0, 5));
+    const weAdj = avg([res[5], res[6]]) - avg(res.slice(0, 5));
+    items.push(`<b>Weekends average ${we.toFixed(0)} kWh vs ${wk.toFixed(0)} on weekdays.</b> Allowing for the weather, the gap is ${Math.abs(weAdj) < 1.5 ? 'small (' + weAdj.toFixed(1) + ' kWh), so it’s mostly that weekends happened to be colder' : 'about ' + Math.abs(weAdj).toFixed(1) + ' kWh a day, so weekends still use a little ' + (weAdj > 0 ? 'more' : 'less') + ' than the weather alone explains'}.`);
+  }
+  items.push(`<b>Standby load is about ${Math.round(standbyW)} W</b> (average of each day’s quietest half hour).`);
+  f.innerHTML = items.map(i => `<li>${i}</li>`).join('');
+
+  const heat = $('heat');
+  const cell = WD.map((_, i) => { const ds = hh.filter(d => wdOf(d) === i); return Array.from({ length: 24 }, (_, h) => ds.length ? avg(ds.map(d => d.hh[2 * h] + d.hh[2 * h + 1])) : null); });
+  const mx = Math.max(...cell.flat().filter(v => v != null), 0.01);
+  heat.innerHTML = '<div></div>' + Array.from({ length: 24 }, (_, h) => `<div style="justify-content:center">${h % 6 === 0 ? h : ''}</div>`).join('') +
+    WD.map((n, i) => `<div>${n}</div>` + cell[i].map((v, h) => v == null ? '<div class="c"></div>' :
+      `<div class="c" title="${n} ${fm(h)}: ${v.toFixed(2)} kWh" style="background:color-mix(in srgb,var(--pos) ${Math.round(4 + 96 * v / mx)}%,var(--card))"></div>`).join('')).join('');
+
+  const pos = css('--pos'), muted = css('--muted'), line = css('--line'), ink = css('--ink');
+  $('lg-std').style.background = pos; $('lg-wd').style.background = pos;
+  if (!window.Chart) return;
+  const col = { cheap: '#1baf7a', standard: pos, peak: '#eb6834' };
+  const sc = (fmt, extra = {}) => ({ x: { grid: { display: false }, ticks: { color: muted, maxRotation: 0 } , ...extra.x }, y: { beginAtZero: true, grid: { color: line }, ticks: { color: muted, callback: fmt }, ...extra.y } });
+  profChart?.destroy(); wdChart?.destroy(); tempChart?.destroy();
+  profChart = new Chart($('aprof'), { type: 'bar',
+    data: { labels: hour.map((_, h) => h), datasets: [{ data: hour.map(v => +v.toFixed(2)), backgroundColor: hour.map((_, h) => col[hourBand(h)]), borderRadius: 3, maxBarThickness: 14 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: {
+      title: c => fm(+c[0].label) + '–' + fm(+c[0].label + 1), label: c => c.raw + ' kWh · ' + (rates[2 * c.dataIndex] ?? '?') + 'p/kWh' } } },
+      scales: sc(x => x + ' kWh', { x: { ticks: { color: muted, maxRotation: 0, autoSkip: false, callback: (v, i) => i % 3 === 0 ? i : '' } } }) } });
+  const raw = WD.map((_, i) => hh.filter(d => wdOf(d) === i));
+  wdChart = new Chart($('awd'), { type: 'bar',
+    data: { labels: WD, datasets: [
+      { type: 'bar', label: 'Average', data: raw.map(ds => ds.length ? +avg(ds.map(d => d.kwh)).toFixed(1) : null), backgroundColor: pos, borderRadius: 4, maxBarThickness: 28, order: 2 },
+      ...(m ? [{ type: 'line', label: 'Expected for the weather', data: raw.map(ds => { const t = ds.filter(d => d.temp_c != null); return t.length ? +avg(t.map(d => m.at(d.temp_c))).toFixed(1) : null; }),
+        showLine: false, pointRadius: 5, pointBackgroundColor: ink, pointBorderColor: css('--card'), pointBorderWidth: 2, order: 1 }] : [])] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: { callbacks: {
+      label: c => c.dataset.label + ' ' + c.raw + ' kWh', footer: it => { const ds = raw[it[0].dataIndex]; const t = ds.filter(d => d.temp_c != null); return ds.length + ' days' + (t.length ? ' · avg ' + avg(t.map(d => d.temp_c)).toFixed(1) + '°C' : ''); } } } },
+      scales: sc(x => x + ' kWh') } });
+  if (m) {
+    tempChart = new Chart($('atemp'), { type: 'scatter',
+      data: { datasets: [
+        { data: m.pts.map(d => ({ x: d.temp_c, y: +d.kwh.toFixed(1), date: d.date })), backgroundColor: pos, pointRadius: 4, pointHoverRadius: 6 },
+        { type: 'line', data: [{ x: m.lo, y: m.at(m.lo) }, { x: m.hi, y: m.at(m.hi) }], borderColor: muted, borderDash: [5, 4], borderWidth: 2, pointRadius: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { filter: c => c.datasetIndex === 0, callbacks: {
+        label: c => new Date(c.raw.date + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ': ' + c.raw.y + ' kWh at ' + c.raw.x + '°C' } } },
+        scales: { x: { type: 'linear', grid: { color: line }, ticks: { color: muted, callback: x => x + '°C' }, title: { display: true, text: 'Daily mean outside temperature', color: muted } },
+                  y: { beginAtZero: true, grid: { color: line }, ticks: { color: muted, callback: x => x + ' kWh' } } } } });
+  }
 }
 
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { range = b.dataset.r; store('range', range); renderUsage(); }));
