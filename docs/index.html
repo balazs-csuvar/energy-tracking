@@ -132,6 +132,27 @@ th:first-child,td:first-child{text-align:left}
   <div class="chart"><canvas id="atemp" role="img" aria-label="Scatter of daily kWh against daily mean outside temperature, with a trend line"></canvas></div>
 </div>
 
+<h2 class="sec">Against the design</h2>
+<p class="sub" style="margin-top:-6px" id="dsub"></p>
+<div class="verdict" id="dverdict"></div>
+<div class="grid">
+  <div class="tile"><p class="l">Since heating started</p><p class="v" id="d-pct">–</p><p class="s" id="d-pcts"></p></div>
+  <div class="tile"><p class="l">Projected heat pump use</p><p class="v" id="d-proj">–</p><p class="s" id="d-projs"></p></div>
+  <div class="tile"><p class="l">Implied efficiency</p><p class="v" id="d-spf">–</p><p class="s" id="d-spfs"></p></div>
+  <div class="tile"><p class="l">Non-heating baseline</p><p class="v" id="d-base">–</p><p class="s" id="d-bases"></p></div>
+</div>
+<div class="card">
+  <h2>Cumulative use vs design</h2>
+  <div class="legend"><span><i id="lg-da"></i>Actual</span><span><i style="background:var(--muted)"></i>Design, for the actual weather</span></div>
+  <div class="chart"><canvas id="dcum" role="img" aria-label="Cumulative electricity used since heating started, compared with what the heat pump design predicts for the same weather"></canvas></div>
+</div>
+<div class="card">
+  <h2>Daily use vs temperature</h2>
+  <div class="legend"><span><i id="lg-dp"></i>Your days</span><span><i style="background:var(--muted)"></i>Design</span><span><i style="background:var(--ink)"></i>Your trend</span></div>
+  <div class="chart"><canvas id="dtemp" role="img" aria-label="Daily kWh against outside temperature with the design line and your trend line"></canvas></div>
+</div>
+<p class="note" id="dnote"></p>
+
 <p class="note">Savings compare unit rates only; standing charges are counted in the usage and cost section. All costs include VAT. Usage arrives from Octopus a day or two late; the page refreshes twice a day.</p>
 </main>
 
@@ -140,7 +161,7 @@ th:first-child,td:first-child{text-align:left}
 const $ = id => document.getElementById(id);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const gbp = p => (p < 0 ? '-' : '') + '£' + (Math.abs(p) / 100).toFixed(2);
-let data, cumChart, dailyChart, kwhChart, costChart, profChart, wdChart, tempChart, range = 'month';
+let data, cumChart, dailyChart, kwhChart, costChart, profChart, wdChart, tempChart, dCum, dTemp, design, hist, range = 'month';
 
 function store(k, v) { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); } catch (e) { v = null; } return v; }
 
@@ -314,6 +335,78 @@ function renderAnalysis(days) {
   }
 }
 
+function linfit(pts) {
+  const mx = avg(pts.map(p => p[0])), my = avg(pts.map(p => p[1]));
+  const b = pts.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0) / pts.reduce((a, p) => a + (p[0] - mx) ** 2, 0);
+  return { a: my - b * mx, b };
+}
+
+function renderDesign() {
+  if (!design || !hist?.days?.length) return;
+  const D = design, H = hist.days.filter(d => d.temp_c != null), typ = Object.values(hist.typical_temps || {});
+  const hlc = D.w_per_m2 * D.floor_m2 / (D.indoor_c - D.design_outdoor_c);
+  const k = hlc * 24 / 1000 / D.spf, dhw = D.hot_water_kwh / 365 / D.spf;
+  const warm = H.filter(d => d.temp_c >= 15.5);
+  const base = warm.length >= 5 ? avg(warm.map(d => d.kwh)) : null;
+  if (base == null || typ.length < 300) { $('dverdict').textContent = 'Needs more history to compare with the design.'; return; }
+  let lo = 5, hi = 25, tb = 18;
+  for (let i = 0; i < 50; i++) { tb = (lo + hi) / 2; const q = typ.reduce((a, t) => a + hlc * 24 / 1000 * Math.max(0, tb - t), 0); if (q < D.space_heat_kwh) lo = tb; else hi = tb; }
+  const des = t => base + k * Math.max(0, tb - t);
+  const cold = H.filter(d => d.temp_c < 14);
+  const fitc = cold.length >= 7 ? linfit(cold.map(d => [d.temp_c, d.kwh])) : null;
+  const act = t => fitc ? Math.max(base, fitc.a + fitc.b * t) : null;
+  const household = base - dhw;
+  const since = H.filter(d => d.date >= D.compare_from);
+  const A = since.reduce((a, d) => a + d.kwh, 0), E = since.reduce((a, d) => a + des(d.temp_c), 0);
+  const pct = (A - E) / E * 100;
+  const projTotal = fitc ? typ.reduce((a, t) => a + act(t), 0) : null, projHP = projTotal != null ? projTotal - household * 365 : null;
+  const designHP = D.space_heat_kwh / D.spf + D.hot_water_kwh / D.spf;
+  const spf = projHP ? (D.space_heat_kwh + D.hot_water_kwh) / projHP : null;
+  const fd = s => new Date(s + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+  $('dsub').textContent = `Design: ${D.space_heat_kwh.toLocaleString()} kWh heating + ${D.hot_water_kwh.toLocaleString()} kWh hot water a year, efficiency ${D.spf}, ${D.flow_temp_design_c}°C flow (yours is about ${D.flow_temp_actual_c}°C).`;
+  $('d-pct').textContent = (pct > 0 ? '+' : '') + pct.toFixed(0) + '%';
+  $('d-pcts').textContent = `${Math.round(A)} kWh vs ${Math.round(E)} expected since ${fd(D.compare_from)}`;
+  $('d-proj').textContent = projHP ? Math.round(projHP / 100) * 100 + ' kWh' : '–';
+  $('d-projs').textContent = `a year · design ${D.hp_kwh_low.toLocaleString()}–${D.hp_kwh_high.toLocaleString()}`;
+  $('d-spf').textContent = spf ? spf.toFixed(1) : '–';
+  $('d-spfs').textContent = `if the house needs the design heat · design ${D.spf}`;
+  $('d-base').textContent = base.toFixed(1) + ' kWh';
+  $('d-bases').textContent = `a day on ${warm.length} days ≥15.5°C`;
+  const good = pct <= 0, v = $('dverdict');
+  v.style.background = css(good ? '--pos-bg' : '--neg-bg');
+  v.innerHTML = good
+    ? `<b>Using ${Math.abs(pct).toFixed(0)}% less than the design predicts</b> for the weather since ${fd(D.compare_from)}. On a typical year that points to about ${Math.round(projHP / 100) * 100} kWh for the heat pump, ${projHP < D.hp_kwh_low ? 'below' : 'within'} the design range.`
+    : `<b>Using ${pct.toFixed(0)}% more than the design predicts</b> for the weather since ${fd(D.compare_from)}. On a typical year that points to about ${Math.round(projHP / 100) * 100} kWh for the heat pump (design ${D.hp_kwh_low.toLocaleString()}–${D.hp_kwh_high.toLocaleString()}).`;
+  $('dnote').textContent = `How this works: the design heat loss (${Math.round(hlc)} W/°C, assuming ${D.design_outdoor_c}°C outside at design) is spread over a typical year of local temperatures so it adds up to the design's ${D.space_heat_kwh.toLocaleString()} kWh, then divided by the design efficiency. Non-heating use (${base.toFixed(1)} kWh a day, including hot water) comes from your own warm days and is added to both lines. Edit docs/design.json to change any figure.`;
+
+  const pos = css('--pos'), muted = css('--muted'), line = css('--line'), ink = css('--ink');
+  $('lg-da').style.background = pos; $('lg-dp').style.background = pos;
+  if (!window.Chart) return;
+  let ca = 0, ce = 0;
+  const cumA = since.map(d => +(ca += d.kwh).toFixed(0)), cumE = since.map(d => +(ce += des(d.temp_c)).toFixed(0));
+  dCum?.destroy(); dTemp?.destroy();
+  dCum = new Chart($('dcum'), { type: 'line',
+    data: { labels: since.map(d => fd(d.date)), datasets: [
+      { label: 'Actual', data: cumA, borderColor: pos, borderWidth: 2, pointRadius: 0, tension: 0.2 },
+      { label: 'Design', data: cumE, borderColor: muted, borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.2 }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label + ' ' + c.raw + ' kWh' } } },
+      scales: { x: { grid: { display: false }, ticks: { color: muted, maxRotation: 0, autoSkipPadding: 12 } },
+                y: { beginAtZero: true, grid: { color: line }, ticks: { color: muted, callback: x => x + ' kWh' } } } } });
+  const tmin = Math.min(-2, ...H.map(d => d.temp_c)), tmax = Math.max(20, ...H.map(d => d.temp_c));
+  const curve = f => { const pts = []; for (let t = Math.floor(tmin); t <= Math.ceil(tmax); t += 0.5) pts.push({ x: t, y: +f(t).toFixed(1) }); return pts; };
+  dTemp = new Chart($('dtemp'), { type: 'scatter',
+    data: { datasets: [
+      { label: 'Day', data: H.map(d => ({ x: d.temp_c, y: d.kwh, date: d.date })), backgroundColor: pos, pointRadius: 3.5 },
+      { type: 'line', label: 'Design', data: curve(des), borderColor: muted, borderDash: [5, 4], borderWidth: 2, pointRadius: 0 },
+      ...(fitc ? [{ type: 'line', label: 'Your trend', data: curve(act), borderColor: ink, borderWidth: 1.5, pointRadius: 0 }] : [])] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { filter: c => c.datasetIndex === 0, callbacks: { label: c => fd(c.raw.date) + ': ' + c.raw.y + ' kWh at ' + c.raw.x + '°C' } } },
+      scales: { x: { type: 'linear', grid: { color: line }, ticks: { color: muted, callback: x => x + '°C' } },
+                y: { beginAtZero: true, grid: { color: line }, ticks: { color: muted, callback: x => x + ' kWh' } } } } });
+}
+
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { range = b.dataset.r; store('range', range); renderUsage(); }));
 
 fetch('data.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null).then(d => {
@@ -324,6 +417,8 @@ fetch('data.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null).
   $('meta').textContent = `${d.tariff} · ${d.days[0].date} to ${d.days.at(-1).date} · updated ${upd}`;
   range = store('range') || range;
   render(); renderUsage();
+  Promise.all(['design.json', 'history.json'].map(f => fetch(f, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)))
+    .then(([dz, hz]) => { design = dz; hist = hz; renderDesign(); });
   $('flat').addEventListener('input', () => { store('flatRate', $('flat').value); render(); });
 });
 </script>

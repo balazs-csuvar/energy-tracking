@@ -1,0 +1,15 @@
+{
+ "_note": "Figures from the heat pump design/MCS estimate. design_outdoor_c is assumed (typical London MCS value); edit if your report states it.",
+ "floor_m2": 119.2,
+ "w_per_m2": 68,
+ "indoor_c": 21,
+ "design_outdoor_c": -1.8,
+ "space_heat_kwh": 20230,
+ "hot_water_kwh": 2555,
+ "spf": 2.8,
+ "hp_kwh_low": 7963,
+ "hp_kwh_high": 9732,
+ "flow_temp_design_c": 55,
+ "flow_temp_actual_c": 48,
+ "compare_from": "2026-10-01"
+}
