@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09T19:11+00:00",
+ "updated": "2026-11-10T08:18+00:00",
  "flat_rate": 26.9,
  "tariff": "E-1R-COSY-FIX-12M-26-09-26-J",
  "days": [
@@ -7,193 +7,225 @@
    "date": "2026-10-07",
    "kwh": 20.813,
    "cost_p": 539.56,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-08",
    "kwh": 30.511,
    "cost_p": 755.36,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-09",
    "kwh": 16.606,
    "cost_p": 422.3,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-10",
    "kwh": 27.283,
    "cost_p": 676.95,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-11",
    "kwh": 33.302,
    "cost_p": 862.46,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-12",
    "kwh": 18.812,
    "cost_p": 451.36,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-13",
    "kwh": 16.218,
    "cost_p": 385.85,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-14",
    "kwh": 20.438,
    "cost_p": 479.52,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-15",
    "kwh": 13.665,
    "cost_p": 306.41,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-16",
    "kwh": 26.128,
    "cost_p": 664.87,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-17",
    "kwh": 34.891,
    "cost_p": 890.32,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-18",
    "kwh": 39.112,
    "cost_p": 1027.11,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-19",
    "kwh": 28.071,
    "cost_p": 722.28,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-20",
    "kwh": 26.58,
    "cost_p": 678.49,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-21",
    "kwh": 36.27,
    "cost_p": 900.11,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-22",
    "kwh": 27.666,
    "cost_p": 681.96,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-23",
    "kwh": 36.748,
    "cost_p": 987.7,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-24",
    "kwh": 33.52,
    "cost_p": 822.79,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-25",
    "kwh": 36.71,
    "cost_p": 995.01,
-   "slots": 50
+   "slots": 50,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-26",
    "kwh": 27.718,
    "cost_p": 694.42,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-27",
    "kwh": 26.299,
    "cost_p": 707.27,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-28",
    "kwh": 27.306,
    "cost_p": 708.39,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-29",
    "kwh": 17.851,
    "cost_p": 459.02,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-30",
    "kwh": 30.303,
    "cost_p": 730.3,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-10-31",
    "kwh": 31.15,
    "cost_p": 803.75,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-01",
    "kwh": 33.411,
    "cost_p": 889.92,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-02",
    "kwh": 36.969,
    "cost_p": 910.66,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-03",
    "kwh": 30.988,
    "cost_p": 787.79,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-04",
    "kwh": 40.3,
    "cost_p": 1051.2,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-05",
    "kwh": 36.874,
    "cost_p": 932.85,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-06",
    "kwh": 38.46,
    "cost_p": 983.98,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   },
   {
    "date": "2026-11-07",
    "kwh": 49.143,
    "cost_p": 1289.87,
-   "slots": 48
+   "slots": 48,
+   "standing_p": 52.21
   }
  ]
 }
