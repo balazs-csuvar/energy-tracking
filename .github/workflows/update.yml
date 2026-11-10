@@ -23,6 +23,7 @@ jobs:
           OCTOPUS_ACCOUNT: ${{ secrets.OCTOPUS_ACCOUNT }}
           START_DATE: ${{ vars.START_DATE }}
           FLAT_RATE: ${{ vars.FLAT_RATE }}
+          HISTORY_START: ${{ vars.HISTORY_START || '2026-09-10' }}
         run: python scripts/update.py
       - name: Commit data
         run: |

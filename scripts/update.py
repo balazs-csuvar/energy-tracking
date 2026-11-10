@@ -103,6 +103,9 @@ def write_history(mp, agreements, postcode, now):
     temperatures. Used for the design comparison (summer baseline and annual projection)."""
     try:
         first = parse(agreements[0]["valid_from"])
+        floor = os.environ.get("HISTORY_START")  # ignore anything before you lived here
+        if floor:
+            first = max(first, datetime.fromisoformat(floor).replace(tzinfo=LONDON).astimezone(timezone.utc))
         readings = []
         for m in mp["meters"]:
             r = get_all(f"{API}/electricity-meter-points/{mp['mpan']}/meters/{m['serial_number']}/consumption/",
