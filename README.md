@@ -17,6 +17,10 @@ Unit costs only; standing charges are left out.
 4. **Turn on Pages.** Settings → Pages → *Deploy from a branch* → `main`, folder `/docs`.
 5. **Run it once.** Actions → *Update tariff tracker* → *Run workflow*. After that it runs every morning.
 
+## Heat pump data
+
+Export from econet24 (any period, overlapping files are fine) and upload the CSVs to the `heatpump/` folder on GitHub. Uploading re-runs the update, which writes `docs/heatpump.json`. Efficiency is estimated from flow rate × (flow − return temperature) for heat, and the Octopus half-hours, minus the rest of the house, for electricity.
+
 ## Privacy
 
 On a free GitHub plan, Pages sites are public, so anyone with the URL can see your daily kWh and costs. The API key is never published; it lives only in Actions secrets.
