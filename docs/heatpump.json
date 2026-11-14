@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-14T08:14",
+ "updated": "2026-11-14T16:36",
  "first": "2026-09-11",
  "last": "2026-11-14T08:08",
  "days": [
@@ -14,7 +14,7 @@
    "room_avg": 20.8,
    "ext_avg": 16.7,
    "dhw_max": 46.9,
-   "temp_c": null
+   "temp_c": 17.3
   },
   {
    "date": "2026-09-13",
@@ -27,7 +27,7 @@
    "room_avg": 21.6,
    "ext_avg": 19.1,
    "dhw_max": 69.3,
-   "temp_c": null
+   "temp_c": 19.5
   },
   {
    "date": "2026-09-14",
@@ -40,7 +40,7 @@
    "room_avg": 22.3,
    "ext_avg": 19.4,
    "dhw_max": 47.1,
-   "temp_c": null
+   "temp_c": 19.8
   },
   {
    "date": "2026-09-15",
@@ -53,7 +53,7 @@
    "room_avg": 22.2,
    "ext_avg": 18.0,
    "dhw_max": 46.9,
-   "temp_c": null
+   "temp_c": 18.0
   },
   {
    "date": "2026-09-16",
@@ -66,7 +66,7 @@
    "room_avg": 21.0,
    "ext_avg": 15.3,
    "dhw_max": 46.7,
-   "temp_c": null
+   "temp_c": 15.3
   },
   {
    "date": "2026-09-17",
@@ -79,7 +79,7 @@
    "room_avg": 21.0,
    "ext_avg": 15.1,
    "dhw_max": 46.300000000000004,
-   "temp_c": null
+   "temp_c": 15.9
   },
   {
    "date": "2026-09-18",
@@ -92,7 +92,7 @@
    "room_avg": 20.7,
    "ext_avg": 14.3,
    "dhw_max": 46.6,
-   "temp_c": null
+   "temp_c": 15.2
   },
   {
    "date": "2026-09-19",
@@ -105,7 +105,7 @@
    "room_avg": 21.0,
    "ext_avg": 17.4,
    "dhw_max": 46.2,
-   "temp_c": null
+   "temp_c": 18.8
   },
   {
    "date": "2026-09-20",
@@ -118,7 +118,7 @@
    "room_avg": 21.3,
    "ext_avg": 15.9,
    "dhw_max": 68.1,
-   "temp_c": null
+   "temp_c": 17.2
   },
   {
    "date": "2026-09-21",
@@ -131,7 +131,7 @@
    "room_avg": 20.9,
    "ext_avg": 14.4,
    "dhw_max": 46.6,
-   "temp_c": null
+   "temp_c": 16.6
   },
   {
    "date": "2026-09-22",
@@ -144,7 +144,7 @@
    "room_avg": 21.3,
    "ext_avg": 17.1,
    "dhw_max": 46.4,
-   "temp_c": null
+   "temp_c": 19.5
   },
   {
    "date": "2026-09-23",
@@ -157,7 +157,7 @@
    "room_avg": 21.9,
    "ext_avg": 17.9,
    "dhw_max": 46.6,
-   "temp_c": null
+   "temp_c": 18.6
   },
   {
    "date": "2026-09-24",
@@ -170,7 +170,7 @@
    "room_avg": 21.5,
    "ext_avg": 14.9,
    "dhw_max": 46.4,
-   "temp_c": null
+   "temp_c": 15.4
   },
   {
    "date": "2026-09-25",
@@ -183,7 +183,7 @@
    "room_avg": 21.4,
    "ext_avg": 16.5,
    "dhw_max": 46.5,
-   "temp_c": null
+   "temp_c": 18.0
   },
   {
    "date": "2026-09-26",
@@ -196,7 +196,7 @@
    "room_avg": 21.0,
    "ext_avg": 15.4,
    "dhw_max": 46.5,
-   "temp_c": null
+   "temp_c": 16.0
   },
   {
    "date": "2026-09-27",
@@ -209,7 +209,7 @@
    "room_avg": 21.0,
    "ext_avg": 16.0,
    "dhw_max": 61.1,
-   "temp_c": null
+   "temp_c": 16.8
   },
   {
    "date": "2026-09-28",
@@ -222,7 +222,7 @@
    "room_avg": 21.0,
    "ext_avg": 15.3,
    "dhw_max": 46.5,
-   "temp_c": null
+   "temp_c": 15.8
   },
   {
    "date": "2026-10-01",
@@ -235,7 +235,7 @@
    "room_avg": 21.4,
    "ext_avg": 15.8,
    "dhw_max": 46.800000000000004,
-   "temp_c": null
+   "temp_c": 16.0
   },
   {
    "date": "2026-10-02",
@@ -248,7 +248,7 @@
    "room_avg": 21.5,
    "ext_avg": 14.9,
    "dhw_max": 46.4,
-   "temp_c": null
+   "temp_c": 15.8
   },
   {
    "date": "2026-10-03",
@@ -261,7 +261,7 @@
    "room_avg": 21.2,
    "ext_avg": 15.1,
    "dhw_max": 46.6,
-   "temp_c": null
+   "temp_c": 15.6
   },
   {
    "date": "2026-10-06",
@@ -274,7 +274,7 @@
    "room_avg": 21.5,
    "ext_avg": 14.9,
    "dhw_max": 46.4,
-   "temp_c": null
+   "temp_c": 15.8
   },
   {
    "date": "2026-10-07",
@@ -287,7 +287,7 @@
    "room_avg": 21.6,
    "ext_avg": 12.6,
    "dhw_max": 46.0,
-   "temp_c": null,
+   "temp_c": 12.9,
    "elec_total": 20.81,
    "elec_hp": 14.41
   },
@@ -302,7 +302,7 @@
    "room_avg": 21.4,
    "ext_avg": 9.7,
    "dhw_max": 46.0,
-   "temp_c": null,
+   "temp_c": 10.4,
    "elec_total": 30.51,
    "elec_hp": 24.1
   },
@@ -317,7 +317,7 @@
    "room_avg": 21.3,
    "ext_avg": 13.9,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 15.3,
    "elec_total": 16.61,
    "elec_hp": 10.2
   },
@@ -332,7 +332,7 @@
    "room_avg": 21.5,
    "ext_avg": 10.9,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 11.5,
    "elec_total": 27.28,
    "elec_hp": 20.88
   },
@@ -347,7 +347,7 @@
    "room_avg": 21.6,
    "ext_avg": 11.0,
    "dhw_max": 68.3,
-   "temp_c": null,
+   "temp_c": 11.2,
    "elec_total": 33.3,
    "elec_hp": 26.9
   },
@@ -362,7 +362,7 @@
    "room_avg": 21.4,
    "ext_avg": 13.5,
    "dhw_max": 46.3,
-   "temp_c": null,
+   "temp_c": 14.7,
    "elec_total": 18.81,
    "elec_hp": 12.41
   },
@@ -377,7 +377,7 @@
    "room_avg": 21.8,
    "ext_avg": 15.6,
    "dhw_max": 46.6,
-   "temp_c": null,
+   "temp_c": 16.8,
    "elec_total": 16.22,
    "elec_hp": 9.81
   },
@@ -392,7 +392,7 @@
    "room_avg": 21.9,
    "ext_avg": 12.9,
    "dhw_max": 46.6,
-   "temp_c": null,
+   "temp_c": 13.9,
    "elec_total": 20.44,
    "elec_hp": 14.03
   },
@@ -407,7 +407,7 @@
    "room_avg": 21.3,
    "ext_avg": 16.0,
    "dhw_max": 46.4,
-   "temp_c": null,
+   "temp_c": 17.2,
    "elec_total": 13.66,
    "elec_hp": 7.26
   },
@@ -422,7 +422,7 @@
    "room_avg": 21.0,
    "ext_avg": 12.3,
    "dhw_max": 46.4,
-   "temp_c": null,
+   "temp_c": 12.9,
    "elec_total": 26.13,
    "elec_hp": 19.72
   },
@@ -437,7 +437,7 @@
    "room_avg": 20.5,
    "ext_avg": 9.3,
    "dhw_max": 46.3,
-   "temp_c": null,
+   "temp_c": 9.4,
    "elec_total": 34.89,
    "elec_hp": 28.48
   },
@@ -452,7 +452,7 @@
    "room_avg": 21.4,
    "ext_avg": 9.1,
    "dhw_max": 70.4,
-   "temp_c": null,
+   "temp_c": 9.8,
    "elec_total": 39.11,
    "elec_hp": 32.71
   },
@@ -467,7 +467,7 @@
    "room_avg": 21.7,
    "ext_avg": 9.9,
    "dhw_max": 46.7,
-   "temp_c": null,
+   "temp_c": 10.5,
    "elec_total": 28.07,
    "elec_hp": 21.66
   },
@@ -482,7 +482,7 @@
    "room_avg": 21.6,
    "ext_avg": 11.0,
    "dhw_max": 46.6,
-   "temp_c": null,
+   "temp_c": 11.6,
    "elec_total": 26.58,
    "elec_hp": 20.17
   },
@@ -497,7 +497,7 @@
    "room_avg": 21.5,
    "ext_avg": 8.8,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 9.7,
    "elec_total": 36.27,
    "elec_hp": 29.86
   },
@@ -512,7 +512,7 @@
    "room_avg": 21.6,
    "ext_avg": 10.1,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 11.1,
    "elec_total": 27.67,
    "elec_hp": 21.26
   },
@@ -527,7 +527,7 @@
    "room_avg": 21.7,
    "ext_avg": 9.7,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 10.2,
    "elec_total": 36.75,
    "elec_hp": 30.34
   },
@@ -542,7 +542,7 @@
    "room_avg": 21.4,
    "ext_avg": 9.1,
    "dhw_max": 46.3,
-   "temp_c": null,
+   "temp_c": 10.4,
    "elec_total": 33.52,
    "elec_hp": 27.11
   },
@@ -557,7 +557,7 @@
    "room_avg": 21.8,
    "ext_avg": 9.1,
    "dhw_max": 68.4,
-   "temp_c": null,
+   "temp_c": 10.5,
    "elec_total": 36.71,
    "elec_hp": 30.3
   },
@@ -572,7 +572,7 @@
    "room_avg": 21.8,
    "ext_avg": 10.2,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 11.2,
    "elec_total": 27.31,
    "elec_hp": 20.9
   },
@@ -587,7 +587,7 @@
    "room_avg": 21.9,
    "ext_avg": 12.0,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 11.7,
    "elec_total": 17.85,
    "elec_hp": 11.44
   },
@@ -602,7 +602,7 @@
    "room_avg": 21.8,
    "ext_avg": 9.9,
    "dhw_max": 46.7,
-   "temp_c": null,
+   "temp_c": 10.8,
    "elec_total": 30.3,
    "elec_hp": 23.9
   },
@@ -617,7 +617,7 @@
    "room_avg": 21.7,
    "ext_avg": 9.6,
    "dhw_max": 46.5,
-   "temp_c": null,
+   "temp_c": 9.7,
    "elec_total": 31.15,
    "elec_hp": 24.74
   },
@@ -632,7 +632,7 @@
    "room_avg": 21.9,
    "ext_avg": 9.0,
    "dhw_max": 69.7,
-   "temp_c": null,
+   "temp_c": 8.2,
    "elec_total": 33.41,
    "elec_hp": 27.0
   },
@@ -647,7 +647,7 @@
    "room_avg": 21.6,
    "ext_avg": 8.5,
    "dhw_max": 46.5,
-   "temp_c": null,
+   "temp_c": 9.3,
    "elec_total": 36.97,
    "elec_hp": 30.56
   },
@@ -662,7 +662,7 @@
    "room_avg": 21.6,
    "ext_avg": 8.6,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 9.4,
    "elec_total": 30.99,
    "elec_hp": 24.58
   },
@@ -677,7 +677,7 @@
    "room_avg": 21.6,
    "ext_avg": 7.9,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 8.9,
    "elec_total": 40.3,
    "elec_hp": 33.89
   },
@@ -692,7 +692,7 @@
    "room_avg": 21.5,
    "ext_avg": 8.1,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 8.6,
    "elec_total": 36.87,
    "elec_hp": 30.47
   },
@@ -707,7 +707,7 @@
    "room_avg": 21.5,
    "ext_avg": 7.1,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 7.7,
    "elec_total": 38.46,
    "elec_hp": 32.05
   },
@@ -722,7 +722,7 @@
    "room_avg": 21.5,
    "ext_avg": 6.0,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 6.1,
    "elec_total": 49.14,
    "elec_hp": 42.74
   },
@@ -737,7 +737,7 @@
    "room_avg": 21.5,
    "ext_avg": 6.7,
    "dhw_max": 63.7,
-   "temp_c": null,
+   "temp_c": 6.3,
    "elec_total": 42.79,
    "elec_hp": 36.38
   },
@@ -752,7 +752,7 @@
    "room_avg": 21.4,
    "ext_avg": 6.0,
    "dhw_max": 46.4,
-   "temp_c": null,
+   "temp_c": 5.7,
    "elec_total": 47.57,
    "elec_hp": 41.17
   },
@@ -767,7 +767,7 @@
    "room_avg": 21.1,
    "ext_avg": 7.1,
    "dhw_max": 46.3,
-   "temp_c": null,
+   "temp_c": 7.7,
    "elec_total": 41.79,
    "elec_hp": 35.38
   },
@@ -782,7 +782,7 @@
    "room_avg": 20.7,
    "ext_avg": 7.7,
    "dhw_max": 46.1,
-   "temp_c": null,
+   "temp_c": 8.3,
    "elec_total": 34.94,
    "elec_hp": 28.53
   },
@@ -797,7 +797,7 @@
    "room_avg": 21.1,
    "ext_avg": 4.9,
    "dhw_max": 46.2,
-   "temp_c": null,
+   "temp_c": 5.5,
    "elec_total": 46.39,
    "elec_hp": 39.98
   },
